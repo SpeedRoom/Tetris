@@ -41,11 +41,11 @@
 #define Z_ID            6
 #define T_ID            7
  
-#define SPAWNX          8
+#define SPAWNX          16
 #define SPAWNY          0
 #define SPAWNROTATION   0
 #define UPLIMIT         0
-#define LEFTLIMIT       0
+#define LEFTLIMIT       11
 #define RIGHTLIMIT      31
 #define DOWNLIMIT       63
 #define FALLDELAY       200
@@ -81,7 +81,7 @@
 
 
 
-RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false,64);
+RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 ArduinoNunchuk controller = ArduinoNunchuk();
 // 32 rows, each row has 16 LEDs
 // Every LED has 8 possible values (colors) so it can be stored in 3 bit (from 000 to 111)
@@ -154,6 +154,7 @@ void dropPixel(int positionx, int positiony);
 
 
 void setup() {
+    // Serial.begin(230400);
     pinMode(buttonLinks, INPUT_PULLUP); // links knop
     pinMode(buttonRechts, INPUT_PULLUP);
     matrix.begin();
@@ -177,7 +178,7 @@ bool canFall() {
     return true;
 }
 
-bool isPositionAvailable(int x_, int y_) {//hier moet et probleem zittn
+bool isPositionAvailable(int x_, int y_) {
     for (int pieceIndex = 0; pieceIndex < 4; ++pieceIndex) {
         int positionx, positiony;
         getCoordinates(x_, y_, &positionx, &positiony, pieceIndex);
@@ -199,7 +200,7 @@ void getCoordinates(int x_, int y_, int* positionx, int* positiony, int pieceInd
     *positiony = y_ + baseCoordinateY;
 }
 
-bool isAnActualAndTurnedOffPixel(int positionx, int positiony) {//mss probleem hier
+bool isAnActualAndTurnedOffPixel(int positionx, int positiony) {
     if (positionx < LEFTLIMIT || positionx > RIGHTLIMIT) return false;
     if (positiony > DOWNLIMIT) return false;
     if (isLedOn(positionx, positiony)) return false;
@@ -238,6 +239,7 @@ void setupNewGame() {
     cButtonLock = true;
     zButtonLock = true;
     clearScreen();
+    createFrame();
     clearLedColorMatrix();
     setupNewPiece();
     createShadow();
@@ -288,6 +290,7 @@ void addPieceToMatrix() {
     }
 }
 
+
 unsigned int getColorByID(char pieceID) {
     if (pieceID == NOPIECE) return NOCOLOR;
     if (pieceID == I_ID) return CYAN;
@@ -300,35 +303,44 @@ unsigned int getColorByID(char pieceID) {
 }
 
 unsigned long long getRow(char positiony) {//returned de volledige rij
-    //
-    unsigned long long byte1 = ((unsigned long long) ledColorMatrix[positiony][0]) << 2 * (sizeof(unsigned int) * 8); //kleur 1, moet dubbel zoveel geshift worden als kleur 2
-    unsigned long long byte2 = ((unsigned long long) ledColorMatrix[positiony][1]) << sizeof(unsigned int) * 8;//kleur 2 ,sizeof(unsigned int) staat voor 16 bit, de breedte, moe mss naar 32
-    unsigned long long byte3 = ledColorMatrix[positiony][2]; //kleur3
-    return byte1 | byte2 | byte3;
+    // unsigned long long is 64 bit, NIET GROOT GENOEG!!
+    //er kunnen 2 * 32 bits in 1 long long, genoeg voor 22 leds
+
+    // unsigned long long byte1 = ledColorMatrix[positiony][0];  // niet nodig
+    unsigned long long byte2 = ((unsigned long long) ledColorMatrix[positiony][1]) << 32;   //da was 16 vroeger, moet nu 32 zijn
+    unsigned long long byte3 = ledColorMatrix[positiony][2]; 
+        // if(positiony == 63){
+        //     Serial.println("bytes");
+        //     // Serial.println((~byte1),BIN);
+        //     Serial.println((~byte2),BIN);
+        //     Serial.println((~byte3),BIN);
+        //     Serial.println((sizeof(unsigned int)));
+        // }
+    return byte2 | byte3;
 }
 
 unsigned long long turnOnBits(char positionx, char positiony) {
     return getRow(positiony)  &(0b111LL << ((RIGHTLIMIT - positionx)*3)); //((RIGHTLIMIT - positionx)*3) zegt hoeveel 000..000111 moet geshift worden naar links
 }
 
-unsigned long long turnOffBits(char positionx, char positiony) {
-    return getRow(positiony) & ~(0b111LL << ((RIGHTLIMIT - positionx)*3));//die *3 klopt dus allesins
+unsigned long long turnOffBits(char positionx, char positiony) {//returned gevraagde rij met positie x op 000
+    return getRow(positiony) & ~(0b111LL << ((RIGHTLIMIT - positionx)*3));//*3 omdat iedere led 3 bits heeft om kleur te specifieren
 }
 
 char getPieceID(int positionx, int positiony) {
     return turnOnBits(positionx, positiony) >> ((RIGHTLIMIT - positionx)*3);
 }
-//hier moet de fout ergens zittn e: TODO
+
 bool isLedOn(char positionx, char positiony) {
-    return (turnOnBits(positionx, positiony) ? true: false);//check eens wat turnonbits returned.. TODO
+    return (turnOnBits(positionx, positiony) ? true: false);
 }
 
 void updateLedColorMatrix(int positionx, int positiony, int pieceID_) {
     unsigned long long row = turnOffBits(positionx, positiony) | ((unsigned long long) pieceID << (RIGHTLIMIT - positionx)*3);
-    unsigned long long byte1 = row >> 2 * (sizeof(unsigned int) * 8);
-    unsigned long long byte2 = (sizeof(unsigned int) * 8) & ~((unsigned int) 0);
+    // unsigned long long byte1 = row >> (2 * 32);
+    unsigned long long byte2 = (row >> 32) & ~((unsigned int) 0);
     unsigned long long byte3 = row & ~((unsigned int) 0);
-    ledColorMatrix[positiony][0] = byte1;
+    // ledColorMatrix[positiony][0] = byte1;
     ledColorMatrix[positiony][1] = byte2;
     ledColorMatrix[positiony][2] = byte3;
 }
@@ -469,10 +481,10 @@ bool isRestartButtonPressed(int delaytime) {
     unsigned long long previousTime = millis();
     while (millis() - previousTime < delaytime) {
         controller.update();
-        if (controller.cButton || controller.zButton) return true;
+        if (controller.cButton || controller.zButton) return false;
         delay(INPUTDELAY);
     }
-    return false;
+    return true;
 }
 
 void deleteAllPieces() {
@@ -486,8 +498,8 @@ void deleteAllPieces() {
 
 void createFrame() {
     clearScreen();
-    matrix.drawLine(8, 15, 8, 0, WHITE);
-    matrix.drawLine(22, 15, 22, 0, WHITE);
+    matrix.drawLine(0, 10, 64, 10, WHITE);
+    // matrix.drawLine(64, 15, 22, 0, WHITE);
 }
 
 void printGameOver() {
