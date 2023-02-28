@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include <ArduinoNunchuk.h>
 
+int score = 0;
+
 // Relative position from the center of rotation
 
 // #define I              { { -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 } }
@@ -42,13 +44,13 @@
 #define T_ID            7
  
 #define SPAWNX          16
-#define SPAWNY          0
+#define SPAWNY          10
 #define SPAWNROTATION   0
 #define UPLIMIT         0
 #define LEFTLIMIT       11
 #define RIGHTLIMIT      31
 #define DOWNLIMIT       63
-#define FALLDELAY       200
+#define FALLDELAY       100
 
 #define INPUTDELAY      1
 #define MAXSPEEDDELAY   50
@@ -78,6 +80,8 @@
 
 #define buttonLinks     13
 #define buttonRechts    19
+#define buttondrop      4
+#define buttonrotate    2
 
 
 
@@ -157,6 +161,8 @@ void setup() {
     // Serial.begin(230400);
     pinMode(buttonLinks, INPUT_PULLUP); // links knop
     pinMode(buttonRechts, INPUT_PULLUP);
+    pinMode(buttondrop,INPUT_PULLUP);
+    pinMode(buttonrotate,INPUT_PULLUP);
     matrix.begin();
     // controller.init();
     randomSeed(analogRead(19));
@@ -375,8 +381,8 @@ bool isPressed(int button) {
     if (digitalRead(buttonLinks) == 0 && button == LEFT) return true;
     if (digitalRead(buttonRechts) == 0 && button == RIGHT) return true;
     if (81 < 80 && button == DOWN) return true;
-    if (0 && button == HARDDROP)  return true;
-    if (0 && button == ROTATE) return true;
+    if (digitalRead(buttondrop) && button == HARDDROP)  return true;
+    if (digitalRead(buttonrotate) && button == ROTATE) return true;
     return false;
 }
 
@@ -456,11 +462,6 @@ void rotate() {
     --rotationState;
 }
 
-
-
-
-
-
 void endGame() {
     deleteAllPieces();
     while (1) {
@@ -498,8 +499,21 @@ void deleteAllPieces() {
 
 void createFrame() {
     clearScreen();
-    matrix.drawLine(0, 10, 64, 10, WHITE);
-    // matrix.drawLine(64, 15, 22, 0, WHITE);
+    matrix.drawLine(9, 10, 64, 10, WHITE);
+    matrix.drawLine(9,0,9,32,WHITE);
+    matrix.setRotation(3);
+    
+    matrix.drawChar(1,1,'1',WHITE,NOCOLOR,1);
+    matrix.drawChar(5,1,'5',WHITE,NOCOLOR,1);
+    
+    
+    
+    matrix.drawChar(25,35,'I',WHITE,NOCOLOR,1);
+    
+    
+    matrix.drawChar(25,45,'K',WHITE,NOCOLOR,1);
+    matrix.setRotation(0);
+
 }
 
 void printGameOver() {
@@ -540,10 +554,6 @@ void printGameOver() {
     matrix.drawPixel(20, 0, RED);
 }
 
-
-
-
-
 void deleteFullLines() {
     int linesDeleted[DOWNLIMIT+1] = { 0 };
     bool deleted = false;
@@ -559,6 +569,8 @@ void deleteFullLines() {
         for (int positiony = 0; positiony <= DOWNLIMIT; ++positiony) 
             if (linesDeleted[positiony]) dropLinesFrom(positiony);
     }
+    score+=100;
+    Serial.print(score);
 }
 
 bool isLineFull(int positiony) {
@@ -572,6 +584,7 @@ void deleteLine(int positiony) {
         matrix.drawPixel(positiony, positionx, NOCOLOR);
         updateLedColorMatrix(positionx, positiony, NOPIECE);
     }
+    //TODO: score vergroten
 }
                                            
 void dropLinesFrom(int positiony) {
