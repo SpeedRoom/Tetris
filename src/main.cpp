@@ -3,8 +3,9 @@
 #include <RGBmatrixPanel.h>
 #include <Wire.h>
 #include <ArduinoNunchuk.h>
-
-int score = 0;
+#include <iostream>
+#include <string>
+using namespace std;
 
 // Relative position from the center of rotation
 
@@ -82,6 +83,8 @@ int score = 0;
 #define buttonRechts    19
 #define buttondrop      4
 #define buttonrotate    2
+int score = 0;
+
 
 
 
@@ -155,6 +158,7 @@ bool isLineFull(int positiony);
 void deleteLine(int positiony);
 void dropLinesFrom(int positiony);
 void dropPixel(int positionx, int positiony);
+void display_score();
 
 
 void setup() {
@@ -170,9 +174,11 @@ void setup() {
 }
 
 void loop() {
+    display_score();
     getInput(FALLDELAY);
     if (canFall()) move(x, y+1);
     else setupNewTurn();
+    
 }
 
 
@@ -496,24 +502,22 @@ void deleteAllPieces() {
                 delay(50);
             }
 }
+void display_score(){
+
+    string scorestr = to_string(score);
+    for (int i = 0; i<=scorestr.length();i++){
+        matrix.setRotation(3);
+        matrix.drawChar(5*i,0,scorestr[i],WHITE,NOCOLOR,1);
+        matrix.setRotation(0);
+    }
+    matrix.drawLine(0, 9, 64, 9, WHITE);
+    matrix.drawLine(8,32,8,10,WHITE);
+}
+
+
 
 void createFrame() {
     clearScreen();
-    matrix.drawLine(9, 10, 64, 10, WHITE);
-    matrix.drawLine(9,0,9,32,WHITE);
-    matrix.setRotation(3);
-    
-    matrix.drawChar(1,1,'1',WHITE,NOCOLOR,1);
-    matrix.drawChar(5,1,'5',WHITE,NOCOLOR,1);
-    
-    
-    
-    matrix.drawChar(25,35,'I',WHITE,NOCOLOR,1);
-    
-    
-    matrix.drawChar(25,45,'K',WHITE,NOCOLOR,1);
-    matrix.setRotation(0);
-
 }
 
 void printGameOver() {
@@ -569,8 +573,7 @@ void deleteFullLines() {
         for (int positiony = 0; positiony <= DOWNLIMIT; ++positiony) 
             if (linesDeleted[positiony]) dropLinesFrom(positiony);
     }
-    score+=100;
-    Serial.print(score);
+    
 }
 
 bool isLineFull(int positiony) {
@@ -585,6 +588,7 @@ void deleteLine(int positiony) {
         updateLedColorMatrix(positionx, positiony, NOPIECE);
     }
     //TODO: score vergroten
+    score+=500;
 }
                                            
 void dropLinesFrom(int positiony) {
