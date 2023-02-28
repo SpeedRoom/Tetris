@@ -7,15 +7,6 @@
 #include <string>
 using namespace std;
 
-// Relative position from the center of rotation
-
-// #define I              { { -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 } }
-// #define SQUARE         { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }
-// #define L              { { 1, 0 }, { -1, 1 }, { 0, 1 }, { 1, 1 } }
-// #define REVERSED_L     { { -1, 0 }, { -1, 1 }, { 0, 1 }, { 1, 1 } }
-// #define Z              { { -1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 } }
-// #define REVERSED_Z     { { 0, 0 }, { 1, 0 }, { -1, 1 }, { 0, 1 } }
-// #define T              { { 0, 0 }, { -1, 1 }, { 0, 1 }, { 1, 1 } }
 
 #define I              { { 0, 1 }, { 1, 1 }, { 2, 1 }, { 3, 1 } }
 #define SQUARE         { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }
@@ -84,6 +75,8 @@ using namespace std;
 #define buttondrop      4
 #define buttonrotate    2
 int score = 0;
+bool bereikt = false;
+
 
 
 
@@ -159,7 +152,25 @@ void deleteLine(int positiony);
 void dropLinesFrom(int positiony);
 void dropPixel(int positionx, int positiony);
 void display_score();
+void display_naam();
 
+struct score_word{
+    int score;
+    char letter;
+};
+
+score_word omzet[] = {
+    {200,'G'},
+    {400,'E'},
+    {600,'E'},
+    {800,'R'},
+    {1000,'T'},
+    {1200,'H'},
+    {1400,'O'},
+    {1600,'S'},
+    {1800,'T'},
+    {200,'E'}
+};
 
 void setup() {
     // Serial.begin(230400);
@@ -175,10 +186,10 @@ void setup() {
 
 void loop() {
     display_score();
+    display_naam();
     getInput(FALLDELAY);
     if (canFall()) move(x, y+1);
-    else setupNewTurn();
-    
+    else setupNewTurn();   
 }
 
 
@@ -514,6 +525,36 @@ void display_score(){
     matrix.drawLine(8,32,8,10,WHITE);
 }
 
+void display_naam(){
+// bereikt enkel true als we geen hogere score meer hebben dan bepaalde score van onze omzet_map.
+//vervolgens worden de bijhorende char op LED geprint, indien index hoger is dan 4 dan doen we -5
+//en printen we vervolgens alleen de achternaam en en voornaam gaat weg 
+    bereikt = false;
+    while (!bereikt){
+        int i = 0;
+        if (score >= omzet[i].score){
+            if (i>4){
+                matrix.setRotation(3);
+                matrix.drawChar(28,(i-5)*7,omzet[i].letter,WHITE,NOCOLOR,1);
+                matrix.setRotation(0);
+                i++;
+
+            }
+            else{
+                matrix.setRotation(3);
+                matrix.drawChar(28,i*7,omzet[i].letter,WHITE,NOCOLOR,1);
+                matrix.setRotation(0);
+                i++;
+            }  
+        }
+        else{
+            bereikt = true;
+        }
+
+
+    }
+        
+}
 
 
 void createFrame() {
@@ -588,7 +629,7 @@ void deleteLine(int positiony) {
         updateLedColorMatrix(positionx, positiony, NOPIECE);
     }
     //TODO: score vergroten
-    score+=500;
+    score+=50;
 }
                                            
 void dropLinesFrom(int positiony) {
