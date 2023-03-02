@@ -530,8 +530,8 @@ void display_naam(){
 //vervolgens worden de bijhorende char op LED geprint, indien index hoger is dan 4 dan doen we -5
 //en printen we vervolgens alleen de achternaam en en voornaam gaat weg 
     bereikt = false;
+    int i=0;
     while (!bereikt){
-        int i = 0;
         if (score >= omzet[i].score){
             if (i>4){
                 matrix.setRotation(3);
@@ -549,6 +549,7 @@ void display_naam(){
         }
         else{
             bereikt = true;
+            break;
         }
 
 
