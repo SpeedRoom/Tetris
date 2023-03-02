@@ -36,10 +36,10 @@ using namespace std;
 #define T_ID            7
  
 #define SPAWNX          16
-#define SPAWNY          10
+#define SPAWNY          11
 #define SPAWNROTATION   0
 #define UPLIMIT         0
-#define LEFTLIMIT       11
+#define LEFTLIMIT       10
 #define RIGHTLIMIT      31
 #define DOWNLIMIT       63
 #define FALLDELAY       100
@@ -74,7 +74,7 @@ using namespace std;
 #define buttonRechts    19
 #define buttondrop      4
 #define buttonrotate    2
-int score = 0;
+int score = 500;
 bool bereikt = false;
 
 
@@ -169,7 +169,7 @@ score_word omzet[] = {
     {1400,'O'},
     {1600,'S'},
     {1800,'T'},
-    {200,'E'}
+    {2000,'E'}
 };
 
 void setup() {
@@ -535,14 +535,14 @@ void display_naam(){
         if (score >= omzet[i].score){
             if (i>4){
                 matrix.setRotation(3);
-                matrix.drawChar(28,(i-5)*7,omzet[i].letter,WHITE,NOCOLOR,1);
+                matrix.drawChar(25,(i-5)*7,omzet[i].letter,WHITE,NOCOLOR,1);
                 matrix.setRotation(0);
                 i++;
 
             }
             else{
                 matrix.setRotation(3);
-                matrix.drawChar(28,i*7,omzet[i].letter,WHITE,NOCOLOR,1);
+                matrix.drawChar(25,i*7,omzet[i].letter,WHITE,NOCOLOR,1);
                 matrix.setRotation(0);
                 i++;
             }  
