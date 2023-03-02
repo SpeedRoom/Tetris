@@ -529,20 +529,23 @@ void display_naam(){
 // bereikt enkel true als we geen hogere score meer hebben dan bepaalde score van onze omzet_map.
 //vervolgens worden de bijhorende char op LED geprint, indien index hoger is dan 4 dan doen we -5
 //en printen we vervolgens alleen de achternaam en en voornaam gaat weg 
-    bereikt = false;
+
+
+//oude code, werkt sws maar nog foutje in...
+    /* bereikt = false;
     int i=0;
     while (!bereikt){
         if (score >= omzet[i].score){
             if (i>4){
                 matrix.setRotation(3);
-                matrix.drawChar(25,(i-5)*7,omzet[i].letter,WHITE,NOCOLOR,1);
+                matrix.drawChar(25,(i-5)*8,omzet[i].letter,WHITE,NOCOLOR,1);
                 matrix.setRotation(0);
                 i++;
 
             }
             else{
                 matrix.setRotation(3);
-                matrix.drawChar(25,i*7,omzet[i].letter,WHITE,NOCOLOR,1);
+                matrix.drawChar(25,i*8,omzet[i].letter,WHITE,NOCOLOR,1);
                 matrix.setRotation(0);
                 i++;
             }  
@@ -553,8 +556,37 @@ void display_naam(){
         }
 
 
+    } */
+    boolean limiet_bereikt = false;
+    int i = 0;
+    // eerst gaan kijken tot welke i we hebben in 'omzet'
+    while ((score > omzet[i].score) & (!limiet_bereikt)){
+        if(i<10){
+            //die 10 kunnen we volgens mij wel nog veralgemenen door iets van sizeof(omzet.score) ofsoiets
+            i++;
+        }
+        else{
+            limiet_bereikt = true;
+        }
+
     }
-        
+    //als i groter of gelijk is aan 5 dan gaan we de achternaam printen
+    if (i>=5){
+        for (int x = 0;(i-5);x++){
+            matrix.setRotation(3);
+            matrix.drawChar(25,(x)*8,omzet[x+5].letter,WHITE,NOCOLOR,1);
+            matrix.setRotation(0);
+        }
+         
+    }
+    // is i niet groter dan 5 dan printen we gewoon de voornaam
+    else {
+        for (int y = 0;i;y++){
+            matrix.setRotation(3);
+            matrix.drawChar(25,y*8,omzet[y].letter,WHITE,NOCOLOR,1);
+            matrix.setRotation(0);
+        }
+    }     
 }
 
 
