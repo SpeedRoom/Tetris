@@ -74,6 +74,7 @@ using namespace std;
 #define buttonRechts    19
 #define buttondrop      4
 #define buttonrotate    2
+//#define resetbutton     22
 int score = 500;
 bool bereikt = false;
 
@@ -179,7 +180,6 @@ void setup() {
     pinMode(buttondrop,INPUT_PULLUP);
     pinMode(buttonrotate,INPUT_PULLUP);
     matrix.begin();
-    // controller.init();
     randomSeed(analogRead(19));
     setupNewGame();
 }
@@ -280,7 +280,7 @@ void setupNewTurn() {
         endGame();
     }
 }
-
+// hier nog eens kijken dat we niet dezelfde blokken telkens spawnen
 void setupNewPiece() {
     x = SPAWNX;
     y = SPAWNY;
@@ -494,6 +494,17 @@ void endGame() {
         }
     }
 }
+/*
+bool isRestartButtonPressed(int delaytime) {
+    unsigned long long previousTime = millis();
+    while (millis() - previousTime < delaytime) {
+        if (digitalRead(resetbutton) == 0) return false;
+        delay(INPUTDELAY);
+    }
+    return true;
+}
+
+*/
 
 bool isRestartButtonPressed(int delaytime) {
     unsigned long long previousTime = millis();
@@ -589,12 +600,22 @@ void display_naam(){
     }     
 }
 
-
 void createFrame() {
     clearScreen();
 }
 
 void printGameOver() {
+    //verkorte versie van game over, denk dat deze zeker wel gaat werken
+    /*
+    matrix.drawChar(5,24,'G',RED,NOCOLOR,1);
+    matrix.drawChar(11,24,'A',BLUE,NOCOLOR,1);
+    matrix.drawChar(17,24,'M',GREEN,NOCOLOR,1);
+    matrix.drawChar(23,24,'E',YELLOW,NOCOLOR,1);
+    matrix.drawChar(5,32,'O',PURPLE,NOCOLOR,1);
+    matrix.drawChar(11,32,'V',CYAN,NOCOLOR,1);
+    matrix.drawChar(17,32,'E',WHITE,NOCOLOR,1);
+    matrix.drawChar(23,32,'R',ORANGE,NOCOLOR,1);
+    */
     matrix.drawLine(10, 12, 10, 14, RED);
     matrix.drawLine(11, 15, 13, 15, RED);
     matrix.drawLine(14, 14, 14, 12, RED);
