@@ -35,8 +35,8 @@ using namespace std;
 #define Z_ID            6
 #define T_ID            7
  
-#define SPAWNX          16
-#define SPAWNY          11
+#define SPAWNX          19
+#define SPAWNY          8
 #define SPAWNROTATION   0
 #define UPLIMIT         0
 #define LEFTLIMIT       10
@@ -74,9 +74,10 @@ using namespace std;
 #define buttonRechts    19
 #define buttondrop      4
 #define buttonrotate    2
-//#define resetbutton     22
+#define resetbutton     0
 int score = 500;
 bool bereikt = false;
+bool limiet_bereikt = false;
 
 
 
@@ -179,6 +180,7 @@ void setup() {
     pinMode(buttonRechts, INPUT_PULLUP);
     pinMode(buttondrop,INPUT_PULLUP);
     pinMode(buttonrotate,INPUT_PULLUP);
+    pinMode(resetbutton,INPUT_PULLUP);
     matrix.begin();
     randomSeed(analogRead(19));
     setupNewGame();
@@ -494,27 +496,26 @@ void endGame() {
         }
     }
 }
-/*
+
 bool isRestartButtonPressed(int delaytime) {
     unsigned long long previousTime = millis();
     while (millis() - previousTime < delaytime) {
-        if (digitalRead(resetbutton) == 0) return false;
+        if (digitalRead(resetbutton)) return false;
         delay(INPUTDELAY);
     }
     return true;
 }
 
-*/
 
-bool isRestartButtonPressed(int delaytime) {
-    unsigned long long previousTime = millis();
-    while (millis() - previousTime < delaytime) {
-        controller.update();
-        if (controller.cButton || controller.zButton) return false;
-        delay(INPUTDELAY);
-    }
-    return true;
-}
+// bool isRestartButtonPressed(int delaytime) {
+//     unsigned long long previousTime = millis();
+//     while (millis() - previousTime < delaytime) {
+//         controller.update();
+//         if (controller.cButton || controller.zButton) return false;
+//         delay(INPUTDELAY);
+//     }
+//     return true;
+// }
 
 void deleteAllPieces() {
     for (int positiony = UPLIMIT; positiony <= DOWNLIMIT; ++positiony)
@@ -543,7 +544,7 @@ void display_naam(){
 
 
 //oude code, werkt sws maar nog foutje in...
-    /* bereikt = false;
+    bereikt = false;
     int i=0;
     while (!bereikt){
         if (score >= omzet[i].score){
@@ -567,37 +568,37 @@ void display_naam(){
         }
 
 
-    } */
-    boolean limiet_bereikt = false;
-    int i = 0;
-    // eerst gaan kijken tot welke i we hebben in 'omzet'
-    while ((score > omzet[i].score) & (!limiet_bereikt)){
-        if(i<10){
-            //die 10 kunnen we volgens mij wel nog veralgemenen door iets van sizeof(omzet.score) ofsoiets
-            i++;
-        }
-        else{
-            limiet_bereikt = true;
-        }
+    }
 
-    }
-    //als i groter of gelijk is aan 5 dan gaan we de achternaam printen
-    if (i>=5){
-        for (int x = 0;(i-5);x++){
-            matrix.setRotation(3);
-            matrix.drawChar(25,(x)*8,omzet[x+5].letter,WHITE,NOCOLOR,1);
-            matrix.setRotation(0);
-        }
+//     int i = 0;
+//     // eerst gaan kijken tot welke i we hebben in 'omzet'
+//     while ((score > omzet[i].score) & (!limiet_bereikt)){
+//         if(i<10){
+//             //die 10 kunnen we volgens mij wel nog veralgemenen door iets van sizeof(omzet.score) ofsoiets
+//             i++;
+//         }
+//         else{
+//             limiet_bereikt = true;
+//         }
+
+//     }
+//     //als i groter of gelijk is aan 5 dan gaan we de achternaam printen
+//     if (i>=5){
+//         for (int x = 0;(i-5);x++){
+//             matrix.setRotation(3);
+//             matrix.drawChar(25,(x)*8,omzet[x+5].letter,WHITE,NOCOLOR,1);
+//             matrix.setRotation(0);
+//         }
          
-    }
-    // is i niet groter dan 5 dan printen we gewoon de voornaam
-    else {
-        for (int y = 0;i;y++){
-            matrix.setRotation(3);
-            matrix.drawChar(25,y*8,omzet[y].letter,WHITE,NOCOLOR,1);
-            matrix.setRotation(0);
-        }
-    }     
+//     }
+//     // is i niet groter dan 5 dan printen we gewoon de voornaam
+//     else {
+//         for (int y = 0;i;y++){
+//             matrix.setRotation(3);
+//             matrix.drawChar(25,y*8,omzet[y].letter,WHITE,NOCOLOR,1);
+//             matrix.setRotation(0);
+//         }
+//     }     
 }
 
 void createFrame() {
@@ -606,7 +607,17 @@ void createFrame() {
 
 void printGameOver() {
     //verkorte versie van game over, denk dat deze zeker wel gaat werken
-    /*
+
+    //scherm leegmaken
+    for (int i = 0; i < 64; i++){
+        for(int j = 0; j<32; j++){
+            matrix.writePixel(i,j,NOCOLOR);
+        }
+    }
+    
+
+    matrix.setRotation(3);
+        
     matrix.drawChar(5,24,'G',RED,NOCOLOR,1);
     matrix.drawChar(11,24,'A',BLUE,NOCOLOR,1);
     matrix.drawChar(17,24,'M',GREEN,NOCOLOR,1);
@@ -615,42 +626,54 @@ void printGameOver() {
     matrix.drawChar(11,32,'V',CYAN,NOCOLOR,1);
     matrix.drawChar(17,32,'E',WHITE,NOCOLOR,1);
     matrix.drawChar(23,32,'R',ORANGE,NOCOLOR,1);
-    */
-    matrix.drawLine(10, 12, 10, 14, RED);
-    matrix.drawLine(11, 15, 13, 15, RED);
-    matrix.drawLine(14, 14, 14, 12, RED);
-    matrix.drawLine(13, 12, 12, 12, RED);
-    matrix.drawPixel(12, 13, RED);
-    matrix.drawLine(11, 11, 14, 11, PURPLE);
-    matrix.drawLine(11, 9, 14, 9, PURPLE);
-    matrix.drawPixel(12, 10, PURPLE);
-    matrix.drawPixel(10, 10, PURPLE);
-    matrix.drawLine(10, 8, 14, 8, ORANGE);
-    matrix.drawLine(10, 4, 14, 4, ORANGE);
-    matrix.drawPixel(11, 7, ORANGE);
-    matrix.drawPixel(11, 5, ORANGE);
-    matrix.drawPixel(12, 6, ORANGE);
-    matrix.drawLine(10, 3, 14, 3, BLUE);
-    matrix.drawLine(10, 2, 10, 0, BLUE);
-    matrix.drawLine(12, 2, 12, 1, BLUE);
-    matrix.drawLine(14, 2, 14, 0, BLUE);
-    matrix.drawLine(16, 14, 16, 12, YELLOW);
-    matrix.drawLine(17, 15, 19, 15, YELLOW);
-    matrix.drawLine(17, 11, 19, 11, YELLOW);
-    matrix.drawLine(20, 14, 20, 12, YELLOW);
-    matrix.drawLine(16, 10, 19, 10, CYAN);
-    matrix.drawLine(16, 8, 19, 8, CYAN);
-    matrix.drawPixel(20, 9, CYAN);
-    matrix.drawLine(16, 7, 20, 7, GREEN);
-    matrix.drawLine(16, 6, 16, 4, GREEN);
-    matrix.drawLine(18, 6, 18, 5, GREEN);
-    matrix.drawLine(20, 6, 20, 4, GREEN);
-    matrix.drawLine(16, 3, 20, 3, RED);
-    matrix.drawLine(16, 2, 16, 1, RED);
-    matrix.drawPixel(17, 1, RED);
-    matrix.drawPixel(18, 2, RED);
-    matrix.drawPixel(19, 1, RED);
-    matrix.drawPixel(20, 0, RED);
+    
+    matrix.setRotation(0);
+
+    while(digitalRead(resetbutton)==1){
+        delay(20);
+    }
+
+    //scherm leegmaken
+    for (int i = 0; i < 64; i++){
+        for(int j = 0; j<32; j++){
+            matrix.writePixel(i,j,NOCOLOR);
+        }
+    }
+    // matrix.drawLine(10, 12, 10, 14, RED);
+    // matrix.drawLine(11, 15, 13, 15, RED);
+    // matrix.drawLine(14, 14, 14, 12, RED);
+    // matrix.drawLine(13, 12, 12, 12, RED);
+    // matrix.drawPixel(12, 13, RED);
+    // matrix.drawLine(11, 11, 14, 11, PURPLE);
+    // matrix.drawLine(11, 9, 14, 9, PURPLE);
+    // matrix.drawPixel(12, 10, PURPLE);
+    // matrix.drawPixel(10, 10, PURPLE);
+    // matrix.drawLine(10, 8, 14, 8, ORANGE);
+    // matrix.drawLine(10, 4, 14, 4, ORANGE);
+    // matrix.drawPixel(11, 7, ORANGE);
+    // matrix.drawPixel(11, 5, ORANGE);
+    // matrix.drawPixel(12, 6, ORANGE);
+    // matrix.drawLine(10, 3, 14, 3, BLUE);
+    // matrix.drawLine(10, 2, 10, 0, BLUE);
+    // matrix.drawLine(12, 2, 12, 1, BLUE);
+    // matrix.drawLine(14, 2, 14, 0, BLUE);
+    // matrix.drawLine(16, 14, 16, 12, YELLOW);
+    // matrix.drawLine(17, 15, 19, 15, YELLOW);
+    // matrix.drawLine(17, 11, 19, 11, YELLOW);
+    // matrix.drawLine(20, 14, 20, 12, YELLOW);
+    // matrix.drawLine(16, 10, 19, 10, CYAN);
+    // matrix.drawLine(16, 8, 19, 8, CYAN);
+    // matrix.drawPixel(20, 9, CYAN);
+    // matrix.drawLine(16, 7, 20, 7, GREEN);
+    // matrix.drawLine(16, 6, 16, 4, GREEN);
+    // matrix.drawLine(18, 6, 18, 5, GREEN);
+    // matrix.drawLine(20, 6, 20, 4, GREEN);
+    // matrix.drawLine(16, 3, 20, 3, RED);
+    // matrix.drawLine(16, 2, 16, 1, RED);
+    // matrix.drawPixel(17, 1, RED);
+    // matrix.drawPixel(18, 2, RED);
+    // matrix.drawPixel(19, 1, RED);
+    // matrix.drawPixel(20, 0, RED);
 }
 
 void deleteFullLines() {
