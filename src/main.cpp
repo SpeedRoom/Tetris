@@ -8,13 +8,6 @@
 using namespace std;
 
 
-#define I              { { 0, 1 }, { 1, 1 }, { 2, 1 }, { 3, 1 } }
-#define SQUARE         { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }
-#define L              { { 2, 1 }, { 0, 2 }, { 1, 2 }, { 2, 2 } }
-#define REVERSED_L     { { 0, 1 }, { 0, 2 }, { 1, 2 }, { 2, 2 } }
-#define Z              { { 0, 1 }, { 1, 1 }, { 1, 2 }, { 2, 2 } }
-#define REVERSED_Z     { { 1, 1 }, { 2, 1 }, { 0, 2 }, { 1, 2 } }
-#define T              { { 1, 1 }, { 0, 2 }, { 1, 2 }, { 2, 2 } }
  
 #define NOCOLOR        matrix.Color888(0, 0, 0)
 #define CYAN           matrix.Color888(0, 16, 16)
@@ -36,17 +29,17 @@ using namespace std;
 #define T_ID            7
  
 #define SPAWNX          19
-#define SPAWNY          8
+#define SPAWNY          9
 #define SPAWNROTATION   0
 #define UPLIMIT         0
-#define LEFTLIMIT       10
+#define LEFTLIMIT       11
 #define RIGHTLIMIT      31
 #define DOWNLIMIT       63
-#define FALLDELAY       100
+#define FALLDELAY       200
 
 #define INPUTDELAY      1
 #define MAXSPEEDDELAY   50
-#define DELETIONDELAY   150
+#define DELETIONDELAY   200
 #define TRIGGERMAXSPEED 300
 #define PLACEMENTDELAY  400
 #define FRAMEDELAY      750
@@ -75,9 +68,12 @@ using namespace std;
 #define buttondrop      4
 #define buttonrotate    2
 #define resetbutton     0
-int score = 500;
+#define buttonsnelbeneden 35
+int score = 0;
 bool bereikt = false;
 bool limiet_bereikt = false;
+bool score_changed;
+bool name_on_LED;
 
 
 
@@ -102,10 +98,14 @@ bool leftLock;
 bool rightLock;
 bool cButtonLock;
 bool zButtonLock;
-char basePieceCoordinates[7][4][2] = {
-    I, SQUARE, L,
-    REVERSED_L, Z,
-    REVERSED_Z, T
+short basePieceCoordinates[7][4][2] = {
+    { {-1, 0}, {0, 0}, {1, 0}, {2, 0} },    // I
+    { {0, 0}, {1, 0}, {0, 1}, {1, 1} },     // SQUARE
+    { {1, 0}, {-1, 1}, {0, 1}, {1, 1} },    // L
+    { {-1, 0}, {-1, 1}, {0, 1}, {1, 1} },   // REVERSED_L
+    { {-1, 0}, {0, 0}, {0, 1}, {1, 1} },    // Z
+    { {0, 0}, {1, 0}, {-1, 1}, {0, 1} },    // REVERSED_Z
+    { {0, 0}, {-1, 1}, {0, 1}, {1, 1} }     // T
 };
 
 //Declaration functions:
@@ -154,44 +154,77 @@ void deleteLine(int positiony);
 void dropLinesFrom(int positiony);
 void dropPixel(int positionx, int positiony);
 void display_score();
-void display_naam();
+void display_voornaam();
+void display_achternaam();
+
 
 struct score_word{
     int score;
     char letter;
+    bool bereikt;
 };
 
 score_word omzet[] = {
-    {200,'G'},
-    {400,'E'},
-    {600,'E'},
-    {800,'R'},
-    {1000,'T'},
-    {1200,'H'},
-    {1400,'O'},
-    {1600,'S'},
-    {1800,'T'},
-    {2000,'E'}
+    {50,'H',false},
+    {100,'U',false},
+    {200,'G',false},
+    {300,'O',false},
+    {400,'C',false},
+    {500,'O',false},
+    {600,'O',false},
+    {700,'L',false},
+    {800,'E',false},
+    {900,'N',false},
+    {950,'S',false},
 };
 
 void setup() {
-    // Serial.begin(230400);
+    Serial.begin(230400);
     pinMode(buttonLinks, INPUT_PULLUP); // links knop
     pinMode(buttonRechts, INPUT_PULLUP);
     pinMode(buttondrop,INPUT_PULLUP);
     pinMode(buttonrotate,INPUT_PULLUP);
     pinMode(resetbutton,INPUT_PULLUP);
+    pinMode(buttonsnelbeneden,INPUT);
     matrix.begin();
-    randomSeed(analogRead(19));
+    randomSeed(analogRead(34));
     setupNewGame();
 }
 
 void loop() {
-    display_score();
-    display_naam();
+    if (score == 0){
+        matrix.setRotation(3);
+        matrix.drawChar(14,1,'0',WHITE,NOCOLOR,1);
+        matrix.setRotation(0);
+    }
+    matrix.drawLine(0, 10, 64, 10, WHITE);
+    matrix.drawLine(8,32,8,11,WHITE);
+    score_changed=false;
+    name_on_LED=false;
+    
     getInput(FALLDELAY);
     if (canFall()) move(x, y+1);
-    else setupNewTurn();   
+    else setupNewTurn();
+    if (score_changed){
+        display_score();
+
+        if (score >= 400){
+            if(score == 500){
+                for (int i = 0; i < 56; i++){
+                    for(int j = 0; j<9; j++){
+                        matrix.writePixel(i,j,NOCOLOR);
+                    }
+                }
+            }
+            display_achternaam();
+        }
+        else{
+            display_voornaam();
+        }
+
+    }
+    
+
 }
 
 
@@ -258,6 +291,12 @@ void drawNewPiece(int x_, int y_, int pieceColor) {
 }
 
 void setupNewGame() {
+    score = 0;
+    if (score == 0){
+        matrix.setRotation(3);
+        matrix.drawChar(0,0,'0',WHITE,NOCOLOR,1);
+        matrix.setRotation(0);
+    }
     leftLock = true;
     rightLock = true;
     downLock = true;
@@ -329,18 +368,11 @@ unsigned int getColorByID(char pieceID) {
 
 unsigned long long getRow(char positiony) {//returned de volledige rij
     // unsigned long long is 64 bit, NIET GROOT GENOEG!!
-    //er kunnen 2 * 32 bits in 1 long long, genoeg voor 22 leds
+    //er kunnen 2 * 32 bits in 1 long long, genoeg voor 21 leds
 
     // unsigned long long byte1 = ledColorMatrix[positiony][0];  // niet nodig
     unsigned long long byte2 = ((unsigned long long) ledColorMatrix[positiony][1]) << 32;   //da was 16 vroeger, moet nu 32 zijn
     unsigned long long byte3 = ledColorMatrix[positiony][2]; 
-        // if(positiony == 63){
-        //     Serial.println("bytes");
-        //     // Serial.println((~byte1),BIN);
-        //     Serial.println((~byte2),BIN);
-        //     Serial.println((~byte3),BIN);
-        //     Serial.println((sizeof(unsigned int)));
-        // }
     return byte2 | byte3;
 }
 
@@ -399,9 +431,9 @@ void checkForInput(int button) {
 bool isPressed(int button) {
     if (digitalRead(buttonLinks) == 0 && button == LEFT) return true;
     if (digitalRead(buttonRechts) == 0 && button == RIGHT) return true;
-    if (81 < 80 && button == DOWN) return true;
-    if (digitalRead(buttondrop) && button == HARDDROP)  return true;
-    if (digitalRead(buttonrotate) && button == ROTATE) return true;
+    if (digitalRead(buttonsnelbeneden) == 1  && button == DOWN) return true;
+    if (digitalRead(buttondrop) == 0 && button == HARDDROP)  return true;
+    if (digitalRead(buttonrotate) == 0 && button == ROTATE) return true;
     return false;
 }
 
@@ -485,12 +517,12 @@ void endGame() {
     deleteAllPieces();
     while (1) {
         createFrame();
-        if (isRestartButtonPressed(750)) {
+        if (isRestartButtonPressed(1500)) {
             setupNewGame();
             return;
         }
         printGameOver();
-        if (isRestartButtonPressed(1500)) {
+        if (isRestartButtonPressed(750)) {
             setupNewGame();
             return;
         }
@@ -507,16 +539,6 @@ bool isRestartButtonPressed(int delaytime) {
 }
 
 
-// bool isRestartButtonPressed(int delaytime) {
-//     unsigned long long previousTime = millis();
-//     while (millis() - previousTime < delaytime) {
-//         controller.update();
-//         if (controller.cButton || controller.zButton) return false;
-//         delay(INPUTDELAY);
-//     }
-//     return true;
-// }
-
 void deleteAllPieces() {
     for (int positiony = UPLIMIT; positiony <= DOWNLIMIT; ++positiony)
         for (int positionx = LEFTLIMIT; positionx <= RIGHTLIMIT; ++positionx)
@@ -528,96 +550,66 @@ void deleteAllPieces() {
 void display_score(){
 
     string scorestr = to_string(score);
+    reverse(scorestr.begin(),scorestr.end());
     for (int i = 0; i<=scorestr.length();i++){
         matrix.setRotation(3);
-        matrix.drawChar(5*i,0,scorestr[i],WHITE,NOCOLOR,1);
+        matrix.drawChar(14-(6*i),1,scorestr[i],WHITE,NOCOLOR,1);
         matrix.setRotation(0);
     }
-    matrix.drawLine(0, 9, 64, 9, WHITE);
-    matrix.drawLine(8,32,8,10,WHITE);
+    
 }
 
-void display_naam(){
+
+void display_voornaam(){
 // bereikt enkel true als we geen hogere score meer hebben dan bepaalde score van onze omzet_map.
 //vervolgens worden de bijhorende char op LED geprint, indien index hoger is dan 4 dan doen we -5
 //en printen we vervolgens alleen de achternaam en en voornaam gaat weg 
-
 
 //oude code, werkt sws maar nog foutje in...
     bereikt = false;
     int i=0;
     while (!bereikt){
         if (score >= omzet[i].score){
-            if (i>4){
-                matrix.setRotation(3);
-                matrix.drawChar(25,(i-5)*8,omzet[i].letter,WHITE,NOCOLOR,1);
-                matrix.setRotation(0);
-                i++;
-
-            }
-            else{
                 matrix.setRotation(3);
                 matrix.drawChar(25,i*8,omzet[i].letter,WHITE,NOCOLOR,1);
                 matrix.setRotation(0);
                 i++;
-            }  
-        }
+        }  
         else{
             bereikt = true;
             break;
         }
 
-
-    }
-
-//     int i = 0;
-//     // eerst gaan kijken tot welke i we hebben in 'omzet'
-//     while ((score > omzet[i].score) & (!limiet_bereikt)){
-//         if(i<10){
-//             //die 10 kunnen we volgens mij wel nog veralgemenen door iets van sizeof(omzet.score) ofsoiets
-//             i++;
-//         }
-//         else{
-//             limiet_bereikt = true;
-//         }
-
-//     }
-//     //als i groter of gelijk is aan 5 dan gaan we de achternaam printen
-//     if (i>=5){
-//         for (int x = 0;(i-5);x++){
-//             matrix.setRotation(3);
-//             matrix.drawChar(25,(x)*8,omzet[x+5].letter,WHITE,NOCOLOR,1);
-//             matrix.setRotation(0);
-//         }
-         
-//     }
-//     // is i niet groter dan 5 dan printen we gewoon de voornaam
-//     else {
-//         for (int y = 0;i;y++){
-//             matrix.setRotation(3);
-//             matrix.drawChar(25,y*8,omzet[y].letter,WHITE,NOCOLOR,1);
-//             matrix.setRotation(0);
-//         }
-//     }     
 }
-
+}
+void display_achternaam(){
+    bereikt = false;
+    int i=4;
+    while (!bereikt){
+        if (score >= omzet[i].score){
+                matrix.setRotation(3);
+                matrix.drawChar(25,(i-5)*8,omzet[i].letter,WHITE,NOCOLOR,1);
+                matrix.setRotation(0);
+                i++;
+        }
+        else{
+            bereikt = true;
+            break;
+        }
+}
+}
 void createFrame() {
     clearScreen();
 }
 
 void printGameOver() {
-    //verkorte versie van game over, denk dat deze zeker wel gaat werken
-
     //scherm leegmaken
     for (int i = 0; i < 64; i++){
         for(int j = 0; j<32; j++){
             matrix.writePixel(i,j,NOCOLOR);
         }
     }
-    
-
-    matrix.setRotation(3);
-        
+    matrix.setRotation(3);      
     matrix.drawChar(5,24,'G',RED,NOCOLOR,1);
     matrix.drawChar(11,24,'A',BLUE,NOCOLOR,1);
     matrix.drawChar(17,24,'M',GREEN,NOCOLOR,1);
@@ -639,41 +631,6 @@ void printGameOver() {
             matrix.writePixel(i,j,NOCOLOR);
         }
     }
-    // matrix.drawLine(10, 12, 10, 14, RED);
-    // matrix.drawLine(11, 15, 13, 15, RED);
-    // matrix.drawLine(14, 14, 14, 12, RED);
-    // matrix.drawLine(13, 12, 12, 12, RED);
-    // matrix.drawPixel(12, 13, RED);
-    // matrix.drawLine(11, 11, 14, 11, PURPLE);
-    // matrix.drawLine(11, 9, 14, 9, PURPLE);
-    // matrix.drawPixel(12, 10, PURPLE);
-    // matrix.drawPixel(10, 10, PURPLE);
-    // matrix.drawLine(10, 8, 14, 8, ORANGE);
-    // matrix.drawLine(10, 4, 14, 4, ORANGE);
-    // matrix.drawPixel(11, 7, ORANGE);
-    // matrix.drawPixel(11, 5, ORANGE);
-    // matrix.drawPixel(12, 6, ORANGE);
-    // matrix.drawLine(10, 3, 14, 3, BLUE);
-    // matrix.drawLine(10, 2, 10, 0, BLUE);
-    // matrix.drawLine(12, 2, 12, 1, BLUE);
-    // matrix.drawLine(14, 2, 14, 0, BLUE);
-    // matrix.drawLine(16, 14, 16, 12, YELLOW);
-    // matrix.drawLine(17, 15, 19, 15, YELLOW);
-    // matrix.drawLine(17, 11, 19, 11, YELLOW);
-    // matrix.drawLine(20, 14, 20, 12, YELLOW);
-    // matrix.drawLine(16, 10, 19, 10, CYAN);
-    // matrix.drawLine(16, 8, 19, 8, CYAN);
-    // matrix.drawPixel(20, 9, CYAN);
-    // matrix.drawLine(16, 7, 20, 7, GREEN);
-    // matrix.drawLine(16, 6, 16, 4, GREEN);
-    // matrix.drawLine(18, 6, 18, 5, GREEN);
-    // matrix.drawLine(20, 6, 20, 4, GREEN);
-    // matrix.drawLine(16, 3, 20, 3, RED);
-    // matrix.drawLine(16, 2, 16, 1, RED);
-    // matrix.drawPixel(17, 1, RED);
-    // matrix.drawPixel(18, 2, RED);
-    // matrix.drawPixel(19, 1, RED);
-    // matrix.drawPixel(20, 0, RED);
 }
 
 void deleteFullLines() {
@@ -706,7 +663,8 @@ void deleteLine(int positiony) {
         updateLedColorMatrix(positionx, positiony, NOPIECE);
     }
     //TODO: score vergroten
-    score+=50;
+    score+=25;
+    score_changed = true;
 }
                                            
 void dropLinesFrom(int positiony) {
