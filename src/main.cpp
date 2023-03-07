@@ -6,9 +6,6 @@
 #include <iostream>
 #include <string>
 using namespace std;
-
-
- 
 #define NOCOLOR        matrix.Color888(0, 0, 0)
 #define CYAN           matrix.Color888(0, 16, 16)
 #define YELLOW         matrix.Color888(16, 16, 0)
@@ -71,33 +68,23 @@ using namespace std;
 #define buttonsnelbeneden 35
 int score = 0;
 bool bereikt = false;
-bool limiet_bereikt = false;
 bool score_changed;
-bool name_on_LED;
-
-
-
-
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 ArduinoNunchuk controller = ArduinoNunchuk();
-// 32 rows, each row has 16 LEDs
-// Every LED has 8 possible values (colors) so it can be stored in 3 bit (from 000 to 111)
-// We need 16 * 3 = 48 bit. An unsigned int contain 16 bits on Arduino (bij ons 32), so we'll use 3 unsigned int //TODO unsigned int op esp32 is 32 bit!!!!
-unsigned int ledColorMatrix[64][3]; //veranderd
+unsigned int ledColorMatrix[64][3];
 unsigned long long movementTime;
 unsigned int color;
 char pieceID;
 char x, y;
 char shadowx;
 char shadowy;
-char rotationState;  // 4 states, each state is a 90 degrees counterclockwise rotation
-// Locks are used to prevent unintentional spam
-bool downLock;
-bool leftLock;
-bool rightLock;
-bool cButtonLock;
-bool zButtonLock;
+char rotationState;
+bool button_down_lock;
+bool button_left_lock;
+bool button_right_lock;
+bool button_hardrop_lock;
+bool button_rotate_lock;
 short basePieceCoordinates[7][4][2] = {
     { {-1, 0}, {0, 0}, {1, 0}, {2, 0} },    // I
     { {0, 0}, {1, 0}, {0, 1}, {1, 1} },     // SQUARE
@@ -156,6 +143,7 @@ void dropPixel(int positionx, int positiony);
 void display_score();
 void display_voornaam();
 void display_achternaam();
+void print_well_done();
 
 
 struct score_word{
@@ -179,9 +167,8 @@ score_word omzet[] = {
 };
 
 void setup() {
-    Serial.begin(230400);
-    pinMode(buttonLinks, INPUT_PULLUP); // links knop
-    pinMode(buttonRechts, INPUT_PULLUP);
+    pinMode(buttonLinks, INPUT_PULLUP);
+    pinMode(buttonRechts, INPUT_PULLUP); 
     pinMode(buttondrop,INPUT_PULLUP);
     pinMode(buttonrotate,INPUT_PULLUP);
     pinMode(resetbutton,INPUT_PULLUP);
@@ -192,40 +179,46 @@ void setup() {
 }
 
 void loop() {
-    if (score == 0){
-        matrix.setRotation(3);
-        matrix.drawChar(14,1,'0',WHITE,NOCOLOR,1);
-        matrix.setRotation(0);
-    }
-    matrix.drawLine(0, 10, 64, 10, WHITE);
-    matrix.drawLine(8,32,8,11,WHITE);
-    score_changed=false;
-    name_on_LED=false;
-    
-    getInput(FALLDELAY);
-    if (canFall()) move(x, y+1);
-    else setupNewTurn();
-    if (score_changed){
-        display_score();
+    while(score != 1000){
+        if (score == 0){
+            display_score();
+        }
+        matrix.drawLine(0, 10, 64, 10, WHITE);
+        matrix.drawLine(8,32,8,11,WHITE);
+        score_changed=false;
+        
+        getInput(FALLDELAY);
+        if (canFall()) move(x, y+1);
+        else setupNewTurn();
+        if (score_changed){
+            display_score();
 
-        if (score >= 400){
-            if(score == 500){
-                for (int i = 0; i < 56; i++){
-                    for(int j = 0; j<9; j++){
-                        matrix.writePixel(i,j,NOCOLOR);
+            if (score >= 400){
+                if(score == 400){
+                    for (int i = 0; i < 56; i++){
+                        for(int j = 0; j<9; j++){
+                            matrix.writePixel(i,j,NOCOLOR);
+                        }
                     }
                 }
+                display_achternaam();
             }
-            display_achternaam();
+            else{display_voornaam();}
         }
-        else{
-            display_voornaam();
+    }   
+    print_well_done();
+    if (isRestartButtonPressed(750)) {
+    for (int i = 0; i < 64; i++){
+        for(int j = 0; j<32; j++){
+            matrix.writePixel(i,j,NOCOLOR);
         }
-
     }
-    
-
+    setupNewGame();
+    return;
+    }
 }
+
+
 
 
 bool canFall() {
@@ -297,11 +290,11 @@ void setupNewGame() {
         matrix.drawChar(0,0,'0',WHITE,NOCOLOR,1);
         matrix.setRotation(0);
     }
-    leftLock = true;
-    rightLock = true;
-    downLock = true;
-    cButtonLock = true;
-    zButtonLock = true;
+    button_left_lock = true;
+    button_right_lock = true;
+    button_down_lock = true;
+    button_hardrop_lock = true;
+ button_rotate_lock = true;
     clearScreen();
     createFrame();
     clearLedColorMatrix();
@@ -366,22 +359,18 @@ unsigned int getColorByID(char pieceID) {
     if (pieceID == T_ID) return PURPLE;
 }
 
-unsigned long long getRow(char positiony) {//returned de volledige rij
-    // unsigned long long is 64 bit, NIET GROOT GENOEG!!
-    //er kunnen 2 * 32 bits in 1 long long, genoeg voor 21 leds
-
-    // unsigned long long byte1 = ledColorMatrix[positiony][0];  // niet nodig
-    unsigned long long byte2 = ((unsigned long long) ledColorMatrix[positiony][1]) << 32;   //da was 16 vroeger, moet nu 32 zijn
+unsigned long long getRow(char positiony) {
+    unsigned long long byte2 = ((unsigned long long) ledColorMatrix[positiony][1]) << 32;
     unsigned long long byte3 = ledColorMatrix[positiony][2]; 
     return byte2 | byte3;
 }
 
 unsigned long long turnOnBits(char positionx, char positiony) {
-    return getRow(positiony)  &(0b111LL << ((RIGHTLIMIT - positionx)*3)); //((RIGHTLIMIT - positionx)*3) zegt hoeveel 000..000111 moet geshift worden naar links
+    return getRow(positiony)  &(0b111LL << ((RIGHTLIMIT - positionx)*3));
 }
 
-unsigned long long turnOffBits(char positionx, char positiony) {//returned gevraagde rij met positie x op 000
-    return getRow(positiony) & ~(0b111LL << ((RIGHTLIMIT - positionx)*3));//*3 omdat iedere led 3 bits heeft om kleur te specifieren
+unsigned long long turnOffBits(char positionx, char positiony) {
+    return getRow(positiony) & ~(0b111LL << ((RIGHTLIMIT - positionx)*3));
 }
 
 char getPieceID(int positionx, int positiony) {
@@ -394,10 +383,8 @@ bool isLedOn(char positionx, char positiony) {
 
 void updateLedColorMatrix(int positionx, int positiony, int pieceID_) {
     unsigned long long row = turnOffBits(positionx, positiony) | ((unsigned long long) pieceID << (RIGHTLIMIT - positionx)*3);
-    // unsigned long long byte1 = row >> (2 * 32);
     unsigned long long byte2 = (row >> 32) & ~((unsigned int) 0);
     unsigned long long byte3 = row & ~((unsigned int) 0);
-    // ledColorMatrix[positiony][0] = byte1;
     ledColorMatrix[positiony][1] = byte2;
     ledColorMatrix[positiony][2] = byte3;
 }
@@ -439,8 +426,8 @@ bool isPressed(int button) {
 
 void doAction(int button) {
     if (button == LEFT || button == RIGHT || button == DOWN) doAdaptiveMovementTo(button);
-    if (!cButtonLock && button == HARDDROP) hardDrop(x, y);
-    if (!zButtonLock && button == ROTATE) rotate();
+    if (!button_hardrop_lock && button == HARDDROP) hardDrop(x, y);
+    if ( !button_rotate_lock && button == ROTATE) rotate();
 }
 
 void doAdaptiveMovementTo(int button) {
@@ -454,26 +441,26 @@ void doAdaptiveMovementTo(int button) {
 }
 
 bool isLocked(int button) {
-    if (!leftLock && button == LEFT) return true;
-    if (!rightLock && button == RIGHT) return true;
-    if (!downLock && button == DOWN) return true;
+    if (!button_left_lock && button == LEFT) return true;
+    if (!button_right_lock && button == RIGHT) return true;
+    if (!button_down_lock && button == DOWN) return true;
     return false;
 }
 
 void lockButton(int button) {
-    if (button == LEFT) leftLock = true;
-    if (button == RIGHT) rightLock = true;
-    if (button == DOWN) downLock = true;
-    if (button == HARDDROP) cButtonLock = true;
-    if (button == ROTATE) zButtonLock = true;
+    if (button == LEFT) button_left_lock = true;
+    if (button == RIGHT) button_right_lock = true;
+    if (button == DOWN) button_down_lock = true;
+    if (button == HARDDROP) button_hardrop_lock = true;
+    if (button == ROTATE) button_rotate_lock = true;
 }
 
 void unlockButton(int button) {
-    if (button == LEFT) leftLock = false;
-    if (button == RIGHT) rightLock = false;
-    if (button == DOWN) downLock = false;
-    if (button == HARDDROP) cButtonLock = false;
-    if (button == ROTATE) zButtonLock = false;
+    if (button == LEFT) button_left_lock = false;
+    if (button == RIGHT) button_right_lock = false;
+    if (button == DOWN) button_down_lock = false;
+    if (button == HARDDROP) button_hardrop_lock = false;
+    if (button == ROTATE) button_rotate_lock = false;
 }
 
 void moveTo(int button) {
@@ -548,7 +535,6 @@ void deleteAllPieces() {
             }
 }
 void display_score(){
-
     string scorestr = to_string(score);
     reverse(scorestr.begin(),scorestr.end());
     for (int i = 0; i<=scorestr.length();i++){
@@ -561,11 +547,6 @@ void display_score(){
 
 
 void display_voornaam(){
-// bereikt enkel true als we geen hogere score meer hebben dan bepaalde score van onze omzet_map.
-//vervolgens worden de bijhorende char op LED geprint, indien index hoger is dan 4 dan doen we -5
-//en printen we vervolgens alleen de achternaam en en voornaam gaat weg 
-
-//oude code, werkt sws maar nog foutje in...
     bereikt = false;
     int i=0;
     while (!bereikt){
@@ -579,7 +560,6 @@ void display_voornaam(){
             bereikt = true;
             break;
         }
-
 }
 }
 void display_achternaam(){
@@ -588,7 +568,7 @@ void display_achternaam(){
     while (!bereikt){
         if (score >= omzet[i].score){
                 matrix.setRotation(3);
-                matrix.drawChar(25,(i-5)*8,omzet[i].letter,WHITE,NOCOLOR,1);
+                matrix.drawChar(25,(i-4)*8,omzet[i].letter,WHITE,NOCOLOR,1);
                 matrix.setRotation(0);
                 i++;
         }
@@ -601,9 +581,28 @@ void display_achternaam(){
 void createFrame() {
     clearScreen();
 }
+void print_well_done(){
+    for (int i = 0; i < 64; i++){
+        for(int j = 0; j<32; j++){
+            matrix.writePixel(i,j,NOCOLOR);
+        }
+    }
+    matrix.setRotation(3);      
+    matrix.drawChar(5,24,'W',RED,NOCOLOR,1);
+    matrix.drawChar(11,24,'E',BLUE,NOCOLOR,1);
+    matrix.drawChar(17,24,'L',GREEN,NOCOLOR,1);
+    matrix.drawChar(23,24,'L',YELLOW,NOCOLOR,1);
+    matrix.drawChar(5,32,'D',PURPLE,NOCOLOR,1);
+    matrix.drawChar(11,32,'O',CYAN,NOCOLOR,1);
+    matrix.drawChar(17,32,'N',WHITE,NOCOLOR,1);
+    matrix.drawChar(23,32,'E',ORANGE,NOCOLOR,1);
+    
+    matrix.setRotation(0);
 
+    
+
+}
 void printGameOver() {
-    //scherm leegmaken
     for (int i = 0; i < 64; i++){
         for(int j = 0; j<32; j++){
             matrix.writePixel(i,j,NOCOLOR);
@@ -625,7 +624,6 @@ void printGameOver() {
         delay(20);
     }
 
-    //scherm leegmaken
     for (int i = 0; i < 64; i++){
         for(int j = 0; j<32; j++){
             matrix.writePixel(i,j,NOCOLOR);
@@ -662,7 +660,6 @@ void deleteLine(int positiony) {
         matrix.drawPixel(positiony, positionx, NOCOLOR);
         updateLedColorMatrix(positionx, positiony, NOPIECE);
     }
-    //TODO: score vergroten
     score+=25;
     score_changed = true;
 }
