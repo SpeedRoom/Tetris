@@ -1,3 +1,6 @@
+// naam esp: esptetris
+// wachtwoord esp: esptetris
+
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
 #include <RGBmatrixPanel.h>
@@ -5,6 +8,8 @@
 #include <ArduinoNunchuk.h>
 #include <iostream>
 #include <string>
+#include <WiFi.h>
+#include "OTAlib.h"
 using namespace std;
 #define NOCOLOR        matrix.Color888(0, 0, 0)
 #define CYAN           matrix.Color888(0, 16, 16)
@@ -69,6 +74,9 @@ using namespace std;
 int score = 0;
 bool bereikt = false;
 bool score_changed;
+
+//OTA
+OTAlib ota("NETGEAR68", "excitedtuba713");
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 ArduinoNunchuk controller = ArduinoNunchuk();
@@ -167,6 +175,11 @@ score_word omzet[] = {
 };
 
 void setup() {
+  // OTA
+  ota.setHostname("esptetris");  
+  ota.setPassword("esptetris");
+  ota.begin();
+
     pinMode(buttonLinks, INPUT_PULLUP);
     pinMode(buttonRechts, INPUT_PULLUP); 
     pinMode(buttondrop,INPUT_PULLUP);
