@@ -10,6 +10,8 @@
 #include <string>
 #include <WiFi.h>
 #include "OTAlib.h"
+#include <PubSubClient.h>
+
 using namespace std;
 #define NOCOLOR        matrix.Color888(0, 0, 0)
 #define CYAN           matrix.Color888(0, 16, 16)
@@ -77,6 +79,40 @@ bool score_changed;
 
 //OTA
 OTAlib ota("NETGEAR68", "excitedtuba713");
+
+//MQTT -
+#define SSID          "NETGEAR68"
+#define PWD           "excitedtuba713"
+#define MQTT_SERVER   "192.168.0.190"  
+#define MQTT_PORT     1883
+
+topic = "esp_tetris_output";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+const char *ssid = "NETGEAR68";
+const char *password = "excitedtuba713";
+
+void setup_wifi()
+{
+  delay(10);
+  Serial.println("Connecting to WiFi..");
+
+  WiFi.begin(SSID, PWD);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+// -MQTT
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 ArduinoNunchuk controller = ArduinoNunchuk();
@@ -175,10 +211,15 @@ score_word omzet[] = {
 };
 
 void setup() {
-  // OTA
-  ota.setHostname("esptetris");  
-  ota.setPassword("esptetris");
-  ota.begin();
+    // OTA
+    ota.setHostname("esptetris");  
+    ota.setPassword("esptetris");
+    ota.begin();
+
+    //MQTT -
+    setup_wifi();
+    client.setServer(MQTT_SERVER, MQTT_PORT);
+    // - MQTT
 
     pinMode(buttonLinks, INPUT_PULLUP);
     pinMode(buttonRechts, INPUT_PULLUP); 
@@ -191,7 +232,43 @@ void setup() {
     setupNewGame();
 }
 
+//MQTT -
+void reconnect()
+{
+  // Loop until we're reconnected
+  while (!client.connected())
+  {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    // creat unique client ID
+    // in Mosquitto broker enable anom. access
+    if (client.connect("ESP32Client"))
+    {
+      Serial.println("connected");
+      // Subscribe
+      client.subscribe(topic);
+    }
+    else
+    {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 1 second");
+      delay(1000);
+    }
+  }
+}
+//- MQTT
+
+
 void loop() {
+    //MQTT -
+    if (!client.connected())
+    {
+        reconnect();
+    }
+    client.loop();
+    //- MQTT
+
     while(score != 1000){
         if (score == 0){
             display_score();
@@ -611,9 +688,10 @@ void print_well_done(){
     matrix.drawChar(23,32,'E',ORANGE,NOCOLOR,1);
     
     matrix.setRotation(0);
-
     
-
+    //MQTT -
+    client.publish(topic, "voltooid");
+    //- MQTT
 }
 void printGameOver() {
     for (int i = 0; i < 64; i++){
