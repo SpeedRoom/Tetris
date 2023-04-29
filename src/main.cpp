@@ -86,7 +86,7 @@ OTAlib ota("NETGEAR68", "excitedtuba713");
 #define MQTT_SERVER   "192.168.0.190"  
 #define MQTT_PORT     1883
 
-topic = "esp_tetris_output";
+topic = "esp_tetris/output";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -688,7 +688,7 @@ void print_well_done(){
     matrix.drawChar(23,32,'E',ORANGE,NOCOLOR,1);
     
     matrix.setRotation(0);
-    
+
     //MQTT -
     client.publish(topic, "voltooid");
     //- MQTT
