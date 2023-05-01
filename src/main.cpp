@@ -86,7 +86,7 @@ OTAlib ota("NETGEAR68", "excitedtuba713");
 #define MQTT_SERVER   "192.168.0.190"  
 #define MQTT_PORT     1883
 
-topic = "esp_tetris/output";
+const char *topic = "esp_tetris/output";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
