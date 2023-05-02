@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "Lib")(type "KiCad")(uri "C:/Users/Mats Mortier/Downloads/esp32_pcb/esp32_pcb/Lib")(options "")(descr ""))
+  (lib (name "Library")(type "KiCad")(uri "C:/Users/Mats Mortier/Downloads/esp32_pcb/esp32_pcb/Footprints/Foot.pretty/Library.pretty")(options "")(descr ""))
+)
