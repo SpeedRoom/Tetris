@@ -1,0 +1,29 @@
+{
+    "name": "ESP32_FreeRTOS",
+    "description": "library containing educational source materials for the introductory lessons on FreeRTOS on ESP32",
+    "keywords": "ESP32, FreeRTOS, threading, Arduino, multi-core",
+    "authors": [
+        {
+            "name": "Geoffrey Ottoy",
+            "email": "geoffrey.ottoy@kuleuven.be",
+            "maintainer": true
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/dramco-edu/ESP32_FreeRTOS"
+    },
+    "version": "1.0.0",
+    "homepage": "https://github.com/dramco-edu/ESP32_FreeRTOS",
+    "frameworks": "Arduino",
+    "build": {
+        "libArchive": false,
+		"flags": [
+			"-IOTAlib"
+		]
+    },
+    "examples": [
+        "EDU/LEDctrl.h",
+        "EDU/LEDctrl.cpp"
+    ]
+}

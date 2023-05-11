@@ -1,0 +1,1 @@
+{"type": "library", "name": "ESP32_FreeRTOS", "version": "1.0.0+sha.d82060d", "spec": {"owner": null, "id": null, "name": "ESP32_FreeRTOS", "requirements": null, "uri": "git+https://github.com/dramco-edu/ESP32_FreeRTOS"}}
