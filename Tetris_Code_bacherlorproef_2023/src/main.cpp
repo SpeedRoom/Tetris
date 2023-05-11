@@ -21,6 +21,9 @@ void setup() {
 
 void loop() {
   while(tetris.score != 1000){
+    if(tetris.score ==0){
+        tetris.display_score();
+    }
     tetris.matrix->drawLine(0, 10, 64, 10, tetris.matrix->Color888(16, 16, 16)); 
     tetris.matrix->drawLine(8,32,8,11,tetris.matrix->Color888(16, 16, 16)); 
     tetris.score_changed=false;
