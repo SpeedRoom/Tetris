@@ -441,6 +441,29 @@ void Tetris_function::printWellDone(){
 
     //client.publish(topic, "voltooid");  
 }
+
+void Tetris_function::printStartGame(){
+    for (int i = 0; i < 64; i++){
+        for(int j = 0; j<32; j++){
+            matrix->writePixel(i,j,NOCOLOR);
+        }
+    }
+    matrix->setRotation(3);      
+    matrix->drawChar(3,24,'S',RED,NOCOLOR,1);
+    matrix->drawChar(9,24,'T',BLUE,NOCOLOR,1);
+    matrix->drawChar(15,24,'A',GREEN,NOCOLOR,1);
+    matrix->drawChar(21,24,'R',YELLOW,NOCOLOR,1);
+    matrix->drawChar(27,24,'T',YELLOW,NOCOLOR,1);
+    matrix->drawChar(5,32,'G',PURPLE,NOCOLOR,1);
+    matrix->drawChar(11,32,'A',CYAN,NOCOLOR,1);
+    matrix->drawChar(17,32,'M',WHITE,NOCOLOR,1);
+    matrix->drawChar(23,32,'E',ORANGE,NOCOLOR,1);
+    
+    matrix->setRotation(0);
+
+    //client.publish(topic, "voltooid");  
+}
+
 void Tetris_function::printGameOver() {
     //client.publish(topic,"Game Over.....");
     for (int i = 0; i < 64; i++){

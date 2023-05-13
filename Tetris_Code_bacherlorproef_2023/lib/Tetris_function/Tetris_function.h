@@ -214,4 +214,6 @@ public:
     void display_achternaam();
 
     void printWellDone();
+    
+    void printStartGame();
 };
