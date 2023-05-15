@@ -140,6 +140,7 @@ void Tetris_function::setupNewGame() {
     setupNewPiece();
     createShadow();
     drawNewPiece(x, y, color);
+    printStartGame();
 }
 
 void Tetris_function::setupNewTurn() {
@@ -346,11 +347,13 @@ void Tetris_function::endGame() {
         createFrame();
         if (isRestartButtonPressed(1500)) {
             setupNewGame();
+            screenToBlack();
             return;
         }
         printGameOver();
         if (isRestartButtonPressed(750)) {
             setupNewGame();
+            screenToBlack();
             return;
         }
     }
@@ -422,11 +425,7 @@ void Tetris_function::createFrame() {
     clearScreen();
 }
 void Tetris_function::printWellDone(){
-    for (int i = 0; i < 64; i++){
-        for(int j = 0; j<32; j++){
-            matrix->writePixel(i,j,NOCOLOR);
-        }
-    }
+    screenToBlack();
     matrix->setRotation(3);      
     matrix->drawChar(5,24,'W',RED,NOCOLOR,1);
     matrix->drawChar(11,24,'E',BLUE,NOCOLOR,1);
@@ -443,34 +442,23 @@ void Tetris_function::printWellDone(){
 }
 
 void Tetris_function::printStartGame(){
-    for (int i = 0; i < 64; i++){
-        for(int j = 0; j<32; j++){
-            matrix->writePixel(i,j,NOCOLOR);
-        }
-    }
+    screenToBlack();
     matrix->setRotation(3);      
-    matrix->drawChar(3,24,'S',RED,NOCOLOR,1);
-    matrix->drawChar(9,24,'T',BLUE,NOCOLOR,1);
-    matrix->drawChar(15,24,'A',GREEN,NOCOLOR,1);
-    matrix->drawChar(21,24,'R',YELLOW,NOCOLOR,1);
-    matrix->drawChar(27,24,'T',YELLOW,NOCOLOR,1);
+    matrix->drawChar(1,24,'S',RED,NOCOLOR,1);
+    matrix->drawChar(7,24,'T',BLUE,NOCOLOR,1);
+    matrix->drawChar(13,24,'A',GREEN,NOCOLOR,1);
+    matrix->drawChar(19,24,'R',YELLOW,NOCOLOR,1);
+    matrix->drawChar(25,24,'T',YELLOW,NOCOLOR,1);
     matrix->drawChar(5,32,'G',PURPLE,NOCOLOR,1);
     matrix->drawChar(11,32,'A',CYAN,NOCOLOR,1);
     matrix->drawChar(17,32,'M',WHITE,NOCOLOR,1);
     matrix->drawChar(23,32,'E',ORANGE,NOCOLOR,1);
     
     matrix->setRotation(0);
-
-    //client.publish(topic, "voltooid");  
 }
 
 void Tetris_function::printGameOver() {
-    //client.publish(topic,"Game Over.....");
-    for (int i = 0; i < 64; i++){
-        for(int j = 0; j<32; j++){
-            matrix->writePixel(i,j,NOCOLOR);
-        }
-    }
+    screenToBlack();
     matrix->setRotation(3);      
     matrix->drawChar(5,24,'G',RED,NOCOLOR,1);
     matrix->drawChar(11,24,'A',BLUE,NOCOLOR,1);
@@ -487,11 +475,7 @@ void Tetris_function::printGameOver() {
         delay(20);
     }
 
-    for (int i = 0; i < 64; i++){
-        for(int j = 0; j<32; j++){
-            matrix->writePixel(i,j,NOCOLOR);
-        }
-    }
+    screenToBlack();
 }
 
 void Tetris_function::deleteFullLines() {
@@ -523,7 +507,7 @@ void Tetris_function::deleteLine(int positiony) {
         matrix->drawPixel(positiony, positionx, NOCOLOR);
         updateLedColorMatrix(positionx, positiony, NOPIECE);
     }
-    score+=25;
+    score+=75;
     score_changed = true;
 }
                                            
@@ -542,4 +526,13 @@ void Tetris_function::dropPixel(int positionx, int positiony) {
     matrix->drawPixel(positiony+1, positionx, color);
     updateLedColorMatrix(positionx, positiony, NOPIECE);
     updateLedColorMatrix(positionx, positiony+1, pieceID);
+}
+
+void Tetris_function::screenToBlack(){
+    for (int i = 0; i < 64; i++){
+        for(int j = 0; j<32; j++){
+            matrix->writePixel(i,j,NOCOLOR);
+        }
+    }
+
 }

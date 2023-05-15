@@ -33,7 +33,7 @@ using namespace std;
 #define LEFTLIMIT       11
 #define RIGHTLIMIT      31
 #define DOWNLIMIT       63
-#define FALLDELAY       200
+#define FALLDELAY       100
 
 #define INPUTDELAY      1
 #define MAXSPEEDDELAY   50
@@ -216,4 +216,6 @@ public:
     void printWellDone();
     
     void printStartGame();
+
+    void screenToBlack();
 };
